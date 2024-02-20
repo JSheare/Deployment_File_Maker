@@ -80,7 +80,7 @@ def main():
     # Reads/writes deployment files
     for entry in deployments_dictionary:
         file_path = (f'{get_file_loc(entry["Instrument"])}/'
-                     f'{entry["Instrument"].lower()}_{entry["Start date"]}_{entry["End date"]}')
+                     f'{entry["Instrument"].upper()}_{entry["Start date"]}_{entry["End date"]}')
         # Checks to see if existing files are up-to-date
         if os.path.exists(file_path):
             file = open(file_path, 'r')
@@ -89,6 +89,7 @@ def main():
             if deployment_info != entry:
                 with open(file_path, 'w') as file:
                     json.dump(entry, file)
+
         # Otherwise makes a new file
         else:
             with open(file_path, 'w') as file:
@@ -97,4 +98,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
