@@ -9,10 +9,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 
-def get_google_sheet_df(headers, google_sheet_id, sheet_name, _range):
-    """_range is in A1 notation (i.e. A:I returns all rows for columns A to I)"""
-
-    url = f'https://sheets.googleapis.com/v4/spreadsheets/{google_sheet_id}/values/{sheet_name}!{_range}'
+def get_google_sheet_df(headers, sheet_id, sheet_name, column_range):
+    # column_range is in A1 notation (i.e. A:I returns all rows for columns A to I
+    url = f'https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{sheet_name}!{column_range}'
     r = requests.get(url, headers=headers)
     r.raise_for_status()
     values = r.json()['values']
@@ -22,26 +21,7 @@ def get_google_sheet_df(headers, google_sheet_id, sheet_name, _range):
     return df
 
 
-def get_file_loc(detector):
-    detector = detector.upper()
-    if detector == 'GODOT':
-        return '/media/AllDetectorData/Detectors/GODOT'
-    elif detector == 'HAWC':
-        return '/media/AllDetectorData/Detectors/HAWC'
-    elif 'MINITHOR' in detector:
-        return '/media/AllDetectorData/Detectors/MINITHOR1'
-    elif detector == 'SANTIS':
-        return '/media/AllDetectorData/Detectors/SANTIS'
-    elif 'THOR' in detector:
-        return '/media/AllDetectorData/Detectors/THOR'
-
-    return ''
-
-
-def main():
-    # If modifying these scopes here and in the Google dev console, delete the file token.json
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
+def get_token(SCOPES):
     creds = None
     # Imports api access token and refresh token (if they exist)
     if os.path.exists('token.json'):
@@ -63,7 +43,38 @@ def main():
     # Get the api access token
     with open('token.json', 'r') as token:
         info = json.load(token)
-        access_token = info['token']
+        return info['token']
+
+
+def make_file(row_dict):
+    # Renaming the columns to be a little more programmer-friendly
+    row_dict['location'] = row_dict.pop('Location')
+    row_dict['instrument'] = row_dict.pop('Instrument').upper()
+    row_dict['start_date'] = row_dict.pop('Start date')
+    row_dict['end_date'] = row_dict.pop('End date')
+    row_dict['utc_to_local'] = float(row_dict.pop('UTC conversion to local time'))
+    dst_in_region = row_dict.pop('Daylight savings?')
+    row_dict['dst_in_region'] = True if dst_in_region == 'TRUE' else False
+    row_dict['weather_station'] = row_dict.pop('Nearest weather station')
+    row_dict['sounding_station'] = row_dict.pop('Nearest sounding station')
+    row_dict['latitude'] = float(row_dict.pop('Latitude (N)'))
+    row_dict['longitude'] = float(row_dict.pop('Longitude (E, 0-360)'))
+    row_dict['altitude'] = float(row_dict.pop('Altitude (km)'))
+    row_dict['notes'] = row_dict.pop('Notes')
+
+    # Exporting the json file
+    if not os.path.exists('Deployment Files'):
+        os.mkdir('Deployment Files')
+
+    file_name = f'{row_dict["instrument"]}_deployment_{row_dict["start_date"]}_{row_dict["end_date"]}'
+    with open(f'Deployment Files/{file_name}.json', 'w') as file:
+        json.dump(row_dict, file)
+
+
+def main():
+    # If modifying these scopes here and in the Google dev console, delete the file token.json
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    access_token = get_token(SCOPES)
 
     headers = {'authorization': f'Bearer {access_token}',
                'Content-Type': 'application/vnd.api+json'}
@@ -75,25 +86,8 @@ def main():
 
     # Gets the sheet from the api and converts it into a pandas dataframe
     df = get_google_sheet_df(headers, google_sheet_id, sheet_name, sample_range)
-    deployments_dictionary = df.to_dict(orient='records')
-
-    # Reads/writes deployment files
-    for entry in deployments_dictionary:
-        file_path = (f'{get_file_loc(entry["Instrument"])}/'
-                     f'{entry["Instrument"].upper()}_{entry["Start date"]}_{entry["End date"]}')
-        # Checks to see if existing files are up-to-date
-        if os.path.exists(file_path):
-            file = open(file_path, 'r')
-            deployment_info = json.load(file)
-            file.close()
-            if deployment_info != entry:
-                with open(file_path, 'w') as file:
-                    json.dump(entry, file)
-
-        # Otherwise makes a new file
-        else:
-            with open(file_path, 'w') as file:
-                json.dump(entry, file)
+    for row_dict in df.to_dict(orient='records'):
+        make_file(row_dict)
 
 
 if __name__ == '__main__':
