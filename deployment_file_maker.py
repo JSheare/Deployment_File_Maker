@@ -53,8 +53,8 @@ def make_file(row_dict):
     row_dict['start_date'] = row_dict.pop('Start date')
     row_dict['end_date'] = row_dict.pop('End date')
     row_dict['utc_to_local'] = float(row_dict.pop('UTC conversion to local time'))
-    dst_in_region = row_dict.pop('Daylight savings?')
-    row_dict['dst_in_region'] = True if dst_in_region == 'TRUE' else False
+    dst_in_region = row_dict.pop('Daylight savings?').upper()
+    row_dict['dst_in_region'] = True if dst_in_region in ['YES', 'TRUE'] else False
     row_dict['weather_station'] = row_dict.pop('Nearest weather station')
     row_dict['sounding_station'] = row_dict.pop('Nearest sounding station')
     row_dict['latitude'] = float(row_dict.pop('Latitude (N)'))
