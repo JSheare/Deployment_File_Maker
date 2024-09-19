@@ -10,7 +10,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 
 def get_google_sheet_df(headers, sheet_id, sheet_name, column_range):
-    # column_range is in A1 notation (i.e. A:I returns all rows for columns A to I
+    # column_range is in A1 notation (i.e. A:I returns all rows for columns A to I)
     url = f'https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{sheet_name}!{column_range}'
     r = requests.get(url, headers=headers)
     r.raise_for_status()
@@ -48,19 +48,19 @@ def get_token(SCOPES):
 
 def make_file(row_dict):
     # Renaming the columns to be a little more programmer-friendly
-    row_dict['location'] = row_dict.pop('Location')
-    row_dict['instrument'] = row_dict.pop('Instrument').upper()
-    row_dict['start_date'] = row_dict.pop('Start date')
-    row_dict['end_date'] = row_dict.pop('End date')
+    row_dict['location'] = str(row_dict.pop('Location'))
+    row_dict['instrument'] = str(row_dict.pop('Instrument').upper())
+    row_dict['start_date'] = str(row_dict.pop('Start date'))
+    row_dict['end_date'] = str(row_dict.pop('End date'))
     row_dict['utc_to_local'] = float(row_dict.pop('UTC conversion to local time'))
-    dst_in_region = row_dict.pop('Daylight savings?').upper()
-    row_dict['dst_in_region'] = True if dst_in_region in ['YES', 'TRUE'] else False
-    row_dict['weather_station'] = row_dict.pop('Nearest weather station')
-    row_dict['sounding_station'] = row_dict.pop('Nearest sounding station')
+    dst_in_region = str(row_dict.pop('Daylight savings?')).upper()
+    row_dict['dst_in_region'] = True if dst_in_region in ['YES', 'Y', 'TRUE'] else False
+    row_dict['weather_station'] = str(row_dict.pop('Nearest weather station'))
+    row_dict['sounding_station'] = str(row_dict.pop('Nearest sounding station'))
     row_dict['latitude'] = float(row_dict.pop('Latitude (N)'))
     row_dict['longitude'] = float(row_dict.pop('Longitude (E, 0-360)'))
     row_dict['altitude'] = float(row_dict.pop('Altitude (km)'))
-    row_dict['notes'] = row_dict.pop('Notes')
+    row_dict['notes'] = str(row_dict.pop('Notes'))
 
     # Exporting the json file
     if not os.path.exists('Deployment Files'):
