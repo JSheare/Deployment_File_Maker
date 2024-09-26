@@ -1,8 +1,9 @@
-import pandas as pd
+import glob as glob
+import json as json
 import numpy as np
-import requests
-import os.path
-import json
+import os as os
+import pandas as pd
+import requests as requests
 # requires: pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -46,7 +47,7 @@ def get_token(SCOPES):
         return info['token']
 
 
-def make_file(row_dict):
+def make_file(row_dict, path):
     # Renaming the columns to be a little more programmer-friendly
     row_dict['location'] = str(row_dict.pop('Location'))
     row_dict['instrument'] = str(row_dict.pop('Instrument').upper())
@@ -63,11 +64,8 @@ def make_file(row_dict):
     row_dict['notes'] = str(row_dict.pop('Notes'))
 
     # Exporting the json file
-    if not os.path.exists('Deployment Files'):
-        os.mkdir('Deployment Files')
-
     file_name = f'{row_dict["instrument"]}_deployment_{row_dict["start_date"]}_{row_dict["end_date"]}'
-    with open(f'Deployment Files/{file_name}.json', 'w') as file:
+    with open(f'{path}/{file_name}.json', 'w') as file:
         json.dump(row_dict, file)
 
 
@@ -83,11 +81,21 @@ def main():
     google_sheet_id = '1B5ElU3eaeqGJ6gGzR0WePk9q-mMiou7T3FOqge3VDD4'
     sheet_name = 'Sheet1'
     sample_range = 'A:L'
+    directory_name = 'Deployment Files'
 
     # Gets the sheet from the api and converts it into a pandas dataframe
     df = get_google_sheet_df(headers, google_sheet_id, sheet_name, sample_range)
+
+    # Deleting the old files (if they exist)
+    if os.path.exists(directory_name):
+        for file in glob.glob(f'{directory_name}/*.json'):
+            os.remove(file)
+
+    else:
+        os.mkdir(directory_name)
+
     for row_dict in df.to_dict(orient='records'):
-        make_file(row_dict)
+        make_file(row_dict, directory_name)
 
 
 if __name__ == '__main__':
