@@ -1,3 +1,4 @@
+import datetime as dt
 import glob as glob
 import json as json
 import numpy as np
@@ -86,13 +87,25 @@ def main():
     # Gets the sheet from the api and converts it into a pandas dataframe
     df = get_google_sheet_df(headers, google_sheet_id, sheet_name, sample_range)
 
-    # Deleting the old files (if they exist)
+    # Moving old files to an archive directory (if they already exist)
     if os.path.exists(directory_name):
+        archive_dir = f'inactive_{dt.datetime.now().strftime("%y%m%d")}'
+        os.mkdir(archive_dir)
         for file in glob.glob(f'{directory_name}/*.json'):
-            os.remove(file)
+            file_name = file.split('/')[-1].split('\\')[-1]
+            os.rename(file, f'{archive_dir}/{file_name}')
 
     else:
         os.mkdir(directory_name)
+
+    # Leaving this here in case we change our minds
+    # Deleting the old files (if they exist)
+    # if os.path.exists(directory_name):
+    #     for file in glob.glob(f'{directory_name}/*.json'):
+    #         os.remove(file)
+    #
+    # else:
+    #     os.mkdir(directory_name)
 
     for row_dict in df.to_dict(orient='records'):
         make_file(row_dict, directory_name)
