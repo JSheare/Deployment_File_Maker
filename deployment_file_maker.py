@@ -54,9 +54,7 @@ def make_file(row_dict, path):
     row_dict['instrument'] = str(row_dict.pop('Instrument').upper())
     row_dict['start_date'] = str(row_dict.pop('Start date'))
     row_dict['end_date'] = str(row_dict.pop('End date'))
-    row_dict['utc_to_local'] = float(row_dict.pop('UTC conversion to local time'))
-    dst_in_region = str(row_dict.pop('Daylight savings?')).upper()
-    row_dict['dst_in_region'] = True if dst_in_region in ['YES', 'Y', 'TRUE'] else False
+    row_dict['tz_identifier'] = str(row_dict.pop('Timezone'))
     row_dict['weather_station'] = str(row_dict.pop('Nearest weather station'))
     row_dict['sounding_station'] = str(row_dict.pop('Nearest sounding station'))
     row_dict['latitude'] = float(row_dict.pop('Latitude (N)'))
@@ -81,7 +79,7 @@ def main():
     # Google sheet id is in the url, between spreadsheets/d/ and /edit
     google_sheet_id = '1B5ElU3eaeqGJ6gGzR0WePk9q-mMiou7T3FOqge3VDD4'
     sheet_name = 'Sheet1'
-    sample_range = 'A:L'
+    sample_range = 'A:K'
     directory_name = 'Deployment Files'
 
     # Gets the sheet from the api and converts it into a pandas dataframe
